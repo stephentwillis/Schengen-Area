@@ -1,18 +1,18 @@
 # Requirements Analysis
 
-## Pages
+## Page(s)
 
+**Single Page Web-app, React Views:**
 - **Logon**
     - Simple username and password login
-- **Homepage**
-    - Team member: personal management
-        - Work travel breakdown
-        - Add annual leave dates, locations
-    - Travel Dept: Overview Dashboard
-        - Date picker, single and range selections
-        - List of team members, essential details, drill down into
-            - Personnel data
-            - Breakdown of travels (work, annual leave), Schengen area thresholds and proximity to limits.
+- **Team member**
+    - Work travel breakdown
+    - Add annual leave dates, locations
+- **Travel Dept Dashboard**
+    - Date picker, single and range selections
+    - List of team members, essential details, drill down into
+        - Personnel data
+        - Breakdown of travels (work, annual leave), Schengen area thresholds and proximity to limits.
 
 
 ## Technologies
