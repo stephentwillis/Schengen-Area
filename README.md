@@ -29,7 +29,7 @@ The travel department need to be able to add events (race or test) at future dat
 
    - Events: [https://mbgp-raceeng.github.io/events.json](https://mbgp-raceeng.github.io/events.json )
 
-    - Members of personnel: [https://mbgp-raceeng.github.io/users.json](https://mbgp-raceeng.github.io/events.json )
+    - Members of personnel: [https://mbgp-raceeng.github.io/users.json](https://mbgp-raceeng.github.io/users.json )
 
 4. The platform requires users to login to add their own personal travels: unlike a real-world solution, the login system doesn’t need to be sophisticated and bomb-proof.  Remember to give us some login credentials to test your solution.
 
