@@ -95,6 +95,11 @@ const DashboardView = ({logout}) => {
                         <h2 className="grey">Team Schedule</h2> 
                     </div>
                 </div>
+                <div className="row">
+                    <div className="col">
+                        <h2 className="grey">Add Events</h2> 
+                    </div>
+                </div>
             </section>
 
             <section id="at-risk-team-members" className="mb-5">
