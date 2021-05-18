@@ -1,0 +1,217 @@
+@font-face {
+    font-display: swap;
+    font-family: MBCorpo Title;
+    font-style: normal;
+    font-weight: 400;
+    src: url(/src/fonts/MBCorpoATitleCond-Regular-Web.woff2) format("woff2"),url(/src/fonts/MBCorpoATitleCond-Regular-Web.woff) format("woff")
+}
+
+@font-face {
+    font-display: swap;
+    font-family: MBCorpo Text;
+    font-style: normal;
+    font-weight: 400;
+    src: url(/src/fonts/MBCorpoSText-Regular-Web.woff2) format("woff2"),url(/src/fonts/MBCorpoSText-Regular-Web.woff) format("woff")
+}
+
+@font-face {
+    font-display: swap;
+    font-family: MBCorpo Text;
+    font-style: normal;
+    font-weight: 700;
+    src: url(/src/fonts/MBCorpoSText-Bold-Web.woff2) format("woff2"),url(/src/fonts/MBCorpoSText-Bold-Web.woff) format("woff")
+}
+
+*,:after,:before {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box
+}
+
+html {
+    font-family: sans-serif;
+    line-height: 1.15;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(0,0,0,0)
+}
+
+article,aside,figcaption,figure,footer,header,hgroup,main,nav,section {
+    display: block
+}
+
+body {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    text-align: left;
+    background-color: #000000;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+    font-family: 'MBCorpo Text'; 
+    margin-top: 0;
+    margin-bottom: .5rem  
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1rem
+}
+
+input {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: #999999;
+}
+
+a:hover {
+    color: #cccccc;
+    text-decoration: unset;
+}
+
+.header {
+    padding-top: 1rem;
+}
+
+.col {
+    padding: 1rem 0;
+}
+
+.form-control {
+    border-radius: 0;
+    background-clip: unset;
+    border: none;
+}
+
+.petronas {
+    color: #0CA597;
+}
+
+.bg-petronas {
+    background-color: #0CA597;
+    color: #fff;
+}
+
+.grey {
+    color: #999999;
+}
+
+.bg-grey {
+    background-color: #4A4A4A;
+    color: #fff;
+}
+
+.ma-m {
+    vertical-align: middle;
+}
+
+.btn {
+    border-radius: 0;
+    border: 0;
+}
+
+.btn:hover,
+.btn:active,
+.btn.active {
+    background-color: #0ec2b1 !important;
+}
+
+.btn:focus {
+    box-shadow: none;
+}
+
+#login {
+    margin-top: 15%;
+}
+
+#brand-logo a {
+    display: inline-flex;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+
+/* DASHBOARD */
+.team-member .col .fa,
+.team-member .col .fas {
+    font-size: 1.5rem;
+}
+
+.team-member .col.role,
+.team-member .col.toggle {
+    text-align: center;
+}
+
+.team-member .col.name {
+    padding-left: 1rem;
+    line-height: 0.25rem;
+}
+
+.team-member .col.name h5 {
+    display: inline-flex;
+}
+
+.team-member .col.name span {
+    font-style: italic;
+}
+
+.team-member .col.toggle {
+    color: #999;
+    margin-top: 0.5rem;
+    cursor: pointer;
+}
+
+.team-member .col.toggle:hover {
+    color: #ccc;
+}
+
+.team-member .team-member-data {
+    display: none;
+}
+
+.progress {
+    border-radius: 0;
+    margin-top: 1rem;
+}
+
+.progress .progress-bar {
+    border-radius: 0;    
+}
+/* -- DASHBOARD */
+
+
+/* My Account */
+#annual-leave #annual-leave-header .col,
+#annual-leave-form .col  {
+    padding: 0 5px;
+}
+
+#annual-leave #annual-leave-header .col p,
+.annual-leave-row .col p {
+    margin-bottom: 0;
+}
+
+.add-annual-leave i {
+    margin-right: 5px;
+}
+
+.annual-leave-row {
+    padding: 0.25rem 5px;
+    border-bottom: 1px solid #999;
+}
+
+.annual-leave-row .col {
+    padding: 5px;
+}
+
+
+.add-annual-leave,
+.annual-leave-row i {
+    cursor: pointer;
+}
