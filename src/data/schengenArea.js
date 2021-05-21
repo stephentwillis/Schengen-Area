@@ -1,0 +1,30 @@
+const schengenArea = [
+	'Austria',
+	'Belgium',
+	'Czech Republic ',
+	'Denmark',
+	'Estonia',
+	'Finland',
+	'France',
+	'Germany',
+	'Greece',
+	'Hungary',
+	'Iceland',
+	'Italy',
+	'Latvia',
+	'Liechtenstein',
+	'Lithuania',
+	'Luxembourg',
+	'Malta',
+	'Netherlands',
+	'Norway',
+	'Poland',
+	'Portugal',
+	'Slovakia',
+	'Slovenia',
+	'Spain',
+	'Sweden',
+	'Switzerland'
+]
+
+module.exports = schengenArea;

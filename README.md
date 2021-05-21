@@ -1,5 +1,8 @@
 # Travel App 
 
+## Stephen Willis
+App credentials can be found in the Methodology readme, so much more I wanted to do for this! Many thanks for your kind consideration.
+
 ## Introduction 
 To comply with EU regulations, we need to monitor the days our UK passport holding staff spend in Schengen countries. There is a legal limit to not exceed 90 days within the Schengen area in a rolling 180-day window.  
 
@@ -37,7 +40,8 @@ The travel department need to be able to add events (race or test) at future dat
 
 ### Race Example
 
-`03_20Mel` - Melbourne Race on March 20th, same name/date structure applies for all races below.
+`03_20Mel` - Melbourne Race on March 20th, same name/date structure applies for all races below. 
+***STW: this formatting is not consistently applied across events, compare 04_18Imo (Venue: Imola) & 05_02Por (Venue: Portugal) with 05_09Bcn (Venue: Barcelona), 05_23Mco (Venue: Monaco), 06_13Mtl (Montreal? Venue: Canada), 06_27Prd (Paul Ricard? Venue: France). Also 06_05Bak yet the date property is set at 05/05/2022!***
 - Free Practice 1 (FP1) and Free Practice 2 (FP2) happen on March 18th
 - Free Practice 3 (FP3) and Qualifying (Qu) happen on March 19th
 - The Race happens on March 20th.

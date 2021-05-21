@@ -46,6 +46,7 @@ body {
     color: #fff;
     text-align: left;
     background-color: #000000;
+    overflow-y: scroll;
 }
 
 h1, h2, h3, h4, h5, h6
@@ -124,6 +125,30 @@ a:hover {
     box-shadow: none;
 }
 
+.fa-plus-circle.pointer:hover,
+.fa-times-circle.pointer:hover {
+    color: #0ec2b1 !important;
+}
+
+.btn.popover-btn {
+    border-radius: 2rem;
+    padding: 0 0.75rem;
+    font-size: 1.5rem;
+    background-color: transparent;
+    border: 2px solid #0CA597;
+}
+
+.btn.popover-btn:hover,
+.btn.popover-btn:focus {
+    color: #fff;
+    background-color: #4A4A4A !important;
+}
+
+.bs-popover-bottom .arrow::after, .bs-popover-auto[x-placement^="bottom"] .arrow::after {
+    top: 2px;
+    border-bottom-color: #0CA597;
+}
+
 #login {
     margin-top: 15%;
 }
@@ -136,15 +161,20 @@ a:hover {
     text-transform: capitalize;
 }
 
+.pointer {
+    cursor: pointer;
+}
 
-/* DASHBOARD */
+.fs-15 {
+    font-size: 1.5rem;
+}
+
 .team-member .col .fa,
 .team-member .col .fas {
     font-size: 1.5rem;
 }
 
-.team-member .col.role,
-.team-member .col.toggle {
+.team-member .col.role {
     text-align: center;
 }
 
@@ -161,14 +191,8 @@ a:hover {
     font-style: italic;
 }
 
-.team-member .col.toggle {
-    color: #999;
-    margin-top: 0.5rem;
-    cursor: pointer;
-}
-
-.team-member .col.toggle:hover {
-    color: #ccc;
+.team-member .col.threshold {
+    padding-right: 2rem;
 }
 
 .team-member .team-member-data {
@@ -177,41 +201,85 @@ a:hover {
 
 .progress {
     border-radius: 0;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
 .progress .progress-bar {
     border-radius: 0;    
 }
-/* -- DASHBOARD */
 
-
-/* My Account */
 #annual-leave #annual-leave-header .col,
-#annual-leave-form .col  {
+#annual-leave-form .col,
+#team-schedule .col,
+#team-schedule #additional-events-header .col
+#event-form .col  {
     padding: 0 5px;
 }
 
 #annual-leave #annual-leave-header .col p,
-.annual-leave-row .col p {
+.annual-leave-row .col p,
+#team-schedule #additional-events-header .col p,
+.additional-event-row .col p {
     margin-bottom: 0;
 }
 
-.add-annual-leave i {
+.add-annual-leave i,
+.add-event i {
     margin-right: 5px;
 }
 
-.annual-leave-row {
+.annual-leave-row,
+.additional-event-row {
     padding: 0.25rem 5px;
     border-bottom: 1px solid #999;
 }
 
-.annual-leave-row .col {
+.annual-leave-row .col,
+.additional-event-row .col {
     padding: 5px;
 }
 
+.icon {
+    min-height:90px;
+    font-size: 2rem;
+    text-align: center;
+    padding: 1rem;
+}
 
-.add-annual-leave,
-.annual-leave-row i {
-    cursor: pointer;
+.icon i {
+    margin-top: 0.75rem;
+}
+
+.form-control.datepicker {
+    background-color: unset;
+    padding: 0;
+}
+
+.form-control.datepicker .react-date-picker__wrapper {
+    background-color: #fff;
+}
+
+.card,
+.card .card-header {
+    border-radius: 0;
+}
+
+.card {
+    background-color: #1c1d1e;
+    border-top: 2px solid #0CA597;
+}
+
+.card-footer {
+    border-radius: 0;
+    border-top:2px dashed #4a4a4a;
+}
+
+.full-schedule-row .col {
+    border-bottom: 1px solid #999;
+}
+
+.stats .row.race .col,
+.stats .row.tests .col,
+.stats .row.holiday .col {
+    padding: 0;
 }

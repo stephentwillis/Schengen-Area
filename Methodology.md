@@ -30,3 +30,15 @@
 ### Backend
 - C# / WebAPI (data access layer)
 - NoSQL Database (data storage)
+
+
+
+### Team Member Credentials:
+- Username: email address
+- Password (capitalisation important): Firstname.Lastname
+
+### Travel Department Credentials
+- Username: TravelDept
+- Password: M-Amg_P_F1
+
+
