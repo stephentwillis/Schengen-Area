@@ -102,9 +102,9 @@ const DashboardView = ({logout}) => {
             let limitDivisor = (config.schengenLimits.limit / 100); 
             ukTeamMembers[i].width = (totalSchengenRaceDates + totalSchengenTestDates + totalSchengenHolidayDates)/limitDivisor;
 
-            if (ukTeamMembers[i].name = 'Glady' && ukTeamMembers[i].surname == 'Powell' ) {
-                console.log(ukTeamMembers[i]);
-            }
+            // if (ukTeamMembers[i].name == 'Glady' && ukTeamMembers[i].surname == 'Powell' ) {
+            //     console.log(ukTeamMembers[i]);
+            // }
         }
         
     },[ukTeamMembers, startDate])
