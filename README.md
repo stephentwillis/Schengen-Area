@@ -1,7 +1,7 @@
 # Travel App 
 
 ## Stephen Willis
-App credentials can be found in the Methodology readme, so much more I wanted to do for this! Many thanks for your kind consideration.
+App credentials can be found in the Methodology readme, so much more I wanted to do for this! Many thanks for your kind consideration. 
 
 ## Introduction 
 To comply with EU regulations, we need to monitor the days our UK passport holding staff spend in Schengen countries. There is a legal limit to not exceed 90 days within the Schengen area in a rolling 180-day window.  

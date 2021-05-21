@@ -29,7 +29,7 @@
 
 ### Backend
 - C# / WebAPI (data access layer)
-- NoSQL Database (data storage)
+- NoSQL Database (data storage) - Azure Cosmos DB - Subscription credentials available on request
 
 
 
