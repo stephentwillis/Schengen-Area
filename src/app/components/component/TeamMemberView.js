@@ -32,74 +32,97 @@ const TeamMemberView = ({logout}) => {
     };
 
     const Now = moment();
+
+    const spinner = <i className="fad fa-tire fa-spin petronas"></i>;
     // #endregion 
 
     // #region State Handling
-    const [teamMember, updateTeamMember] = useState([]);
-    const [newAnnualLeave, updateNewAnnualLeave] = useState(initialAnnualLeave);
 
+    // Team Member
+    const [teamMember, updateTeamMember] = useState([]); // Get this on first load only, update holiday and hold in separate object until write
+    const [teamMemberHolidays, updateTeamMemberHolidays] = useState([]);
+    const [filteredTeamMemberHolidays, filterTeamMemberHolidays] = useState([]); 
+    const [newHoliday, updateNewHoliday] = useState(initialAnnualLeave);
+
+    // Dates
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    const [events, updateEvents] = useState([]);
+    // Events
+    const [allEvents, updateAllEvents] = useState([]); // Get this on first load only, mutate but don't filter
     const [additionalEvents, updateAdditionalEvents] = useState([]);
-    const [next3Events, updateNext3Events] = useState([]);
+    const [orderedEvents, updateOrderedEvents] = useState([]);
+    const [filteredEvents, updateFilteredEvents] = useState([]);
 
-    const [SchengenRaceEvents, setSchengenRaceEvents] = useState({});
+    // Further filtered events
+    const [SchengenRaceEvents, setSchengenRaceEvents] = useState({}); 
     const [SchengenTestEvents, setSchengenTestEvents] = useState({});
     const [SchengenHolidayEvents, setSchengenHolidayEvents] = useState({});
 
+    // Arrays of dates for filtered events 
     const [SchengenRaceDates, setSchengenRaceDates] = useState([]);
     const [SchengenTestDates, setSchengenTestDates] = useState([]);
     const [SchengenHolidayDates, setSchengenHolidayDates] = useState([]);
 
+    // Progress bar values
     const [totalDays, setTotalDays] = useState(0);
     const [totalWidth, setTotalWidth] = useState(0);
     const [raceWidth, setRaceWidth] = useState(0);
     const [testWidth, setTestWidth] = useState(0);
     const [holidayWidth, setHolidayWidth] = useState(0);
 
+    // show/hide DOM elements
     const [showMySchengen, toggleMySchengenState] = useState(true);
     const [showMySchedule, toggleMyScheduleState] = useState(true);
     const [showFullSchedule, toggleFullScheduleState] = useState(false);
     const [showAnnualLeave, toggleAnnualLeaveState] = useState(true);
     const [showForm, toggleFormState] = useState(false);
-
     const [popoverOpen, setPopoverOpen] = useState(false);
 
-    const [updateAllEvents, setUpdateEventStatus] = useState(false);
+    // Update in side effect?
+    const [updateEvents, setUpdateEventStatus] = useState(false);
     const [updateHoliday, setUpdateHolidayStatus] = useState(false);
 
+    // Loading States
+    const [isLoadingTeamMember, updateLoadingTeamMember] = useState(true);
 
-    useEffect(() => {        
+
+    useEffect(() => {                
         fillTeamMember();
+        fillEvents();
     }, []);
     
     useEffect(() => {
-        setDefaultDates();
-        
-        if (updateHoliday) {
-            fillTeamMember();
-            fillEvents();
-        }
-        setUpdateHolidayStatus(false);      
+        setUpdateHolidayStatus(true);
+        updateTeamMemberHolidays(teamMember.travel);
     }, [teamMember])
 
     useEffect(() => {
-        fillEvents();
-    },[teamMember, startDate, endDate])
+        if (updateHoliday) {
+            filterEvents();
+        }
+        setUpdateHolidayStatus(false);
+        updateLoadingTeamMember(false);
 
+        setDefaultDates();
+    },[teamMemberHolidays]); 
+    
     useEffect(() => {        
-        if (updateAllEvents) {
+        if (updateEvents) {
             mutateEvents();
         }
         setUpdateEventStatus(false);
-
-        filterEvents();
-    }, [events]);    
+    }, [allEvents]);       
     
     useEffect(() => {
+        filterEvents();
+    }, [orderedEvents]);
 
+    useEffect(() => {
+        filterEvents();
+    },[startDate]);
+    
+    useEffect(() => {
         let dates = reduce(SchengenRaceEvents, (acc, event) => {
             acc.push(event.dates[teamMember.role]);
             return acc;
@@ -108,7 +131,7 @@ const TeamMemberView = ({logout}) => {
         // Lets flatten that array of arrays!
         setSchengenRaceDates([].concat.apply([], dates));
            
-    }, [teamMember, startDate, endDate, SchengenRaceEvents])
+    }, [SchengenRaceEvents])
 
     useEffect(() => {        
 
@@ -120,7 +143,7 @@ const TeamMemberView = ({logout}) => {
         // Lets flatten that array of arrays!
         setSchengenTestDates([].concat.apply([], dates));
                
-    }, [teamMember, startDate, endDate, SchengenTestEvents])
+    }, [SchengenTestEvents])
 
     useEffect(() => {        
 
@@ -132,13 +155,13 @@ const TeamMemberView = ({logout}) => {
         // Lets flatten that array of arrays!
         setSchengenHolidayDates([].concat.apply([], dates));
 
-    }, [teamMember, startDate, endDate, SchengenHolidayEvents])
+    }, [SchengenHolidayEvents])
 
     useEffect(() => {
 
         setTotalDays(SchengenRaceDates.length + SchengenTestDates.length + SchengenHolidayDates.length);
 
-    }, [teamMember, startDate, endDate, events, SchengenRaceDates, SchengenTestDates, SchengenHolidayDates]);
+    }, [SchengenRaceDates, SchengenTestDates, SchengenHolidayDates]);
 
     useEffect(() => {        
         let limitDivisor = (config.schengenLimits.limit / 100);        
@@ -148,14 +171,16 @@ const TeamMemberView = ({logout}) => {
         setTestWidth(SchengenTestDates.length/limitDivisor);
         setHolidayWidth(SchengenHolidayDates.length/limitDivisor);
 
+        renderGauge();
+
     }, [totalDays])
 
     // #endregion
 
     //#region Event Handlers
     const change = (e) =>  { 
-        updateNewAnnualLeave({
-            ...newAnnualLeave,
+        updateNewHoliday({
+            ...newHoliday,
             [e.target.name]: e.target.value.trim() 
         });
     }
@@ -174,8 +199,8 @@ const TeamMemberView = ({logout}) => {
             tempDate = Now;
         }
 
-        updateNewAnnualLeave({
-            ...newAnnualLeave,
+        updateNewHoliday({
+            ...newHoliday,
             [name]: tempDate.format('DD/MM/YYYY').toString()
         });
     }
@@ -254,23 +279,23 @@ const TeamMemberView = ({logout}) => {
     const addAnnualLeave = () => {
         async function update() {
             // Update object
-            newAnnualLeave.id = teamMember.travel.length;
-            newAnnualLeave.isschengen = schengenArea.indexOf(newAnnualLeave.destination) > -1;            
-            newAnnualLeave.totaldays = moment(newAnnualLeave.enddate, 'DD/MM/YYYY').diff(moment(newAnnualLeave.startdate, 'DD/MM/YYYY'), 'days');
+            newHoliday.id = teamMember.travel.length;
+            newHoliday.isschengen = schengenArea.indexOf(newHoliday.destination) > -1;            
+            newHoliday.totaldays = moment(newHoliday.enddate, 'DD/MM/YYYY').diff(moment(newHoliday.startdate, 'DD/MM/YYYY'), 'days');
 
             let allDates = [];
-            let from = moment(newAnnualLeave.startdate, 'DD/MM/YYYY');
-            let to = moment(newAnnualLeave.enddate, 'DD/MM/YYYY');
+            let from = moment(newHoliday.startdate, 'DD/MM/YYYY');
+            let to = moment(newHoliday.enddate, 'DD/MM/YYYY');
 
-            while (from <= to) {
+            while (from < to) {
                 allDates.push(from.format('YYYY-MM-DD'));
                 from = from.add(1, 'days');
             }
 
-            newAnnualLeave.dates = allDates;
+            newHoliday.dates = allDates;
 
             // push object into team member travel array
-            teamMember.travel.push(newAnnualLeave);
+            teamMember.travel.push(newHoliday);
 
             // update Cosmos DB
             const { endpoint, key, databaseId, containerId } = CosmosConfig;
@@ -306,7 +331,7 @@ const TeamMemberView = ({logout}) => {
                 .item(teamMember.id, teamMember.email)
                 .replace(teamMember);
 
-                setUpdateHolidayStatus(true);
+            setUpdateHolidayStatus(true);
             updateTeamMember(updatedTeamMember);
         }
         update();        
@@ -320,7 +345,7 @@ const TeamMemberView = ({logout}) => {
 
     const fillEvents = () => { 
         async function getEvents() {
-            const events = await axios({
+            const apiEvents = await axios({
                 method: 'get',
                 url: config.endpoints[0]
             });
@@ -344,10 +369,10 @@ const TeamMemberView = ({logout}) => {
             updateAdditionalEvents(res.resources);
             // -- Cosmos DB 
             
-            let mergedEvents = merge(events.data, res.resources);
+            let mergedEvents = merge(apiEvents.data, res.resources);
 
             setUpdateEventStatus(true);
-            updateEvents(mergedEvents);
+            updateAllEvents(mergedEvents);
         }
         getEvents();
     }
@@ -355,19 +380,19 @@ const TeamMemberView = ({logout}) => {
     const mutateEvents = () => {
         // I'm sure there is a more elegant way of doing this!
         // Munging on read will have performance costs.
-        for (let i = 0; i < events.length; i++) {
-            let index = schengenEvents.findIndex(x => x.venue === events[i].venue);
+        for (let i = 0; i < allEvents.length; i++) {
+            let index = schengenEvents.findIndex(x => x.venue === allEvents[i].venue);
 
-            events[i].title = schengenEvents[index].title;
-            events[i].circuit = schengenEvents[index].circuit;
-            events[i].isSchengen = schengenEvents[index].isSchengen;
-            events[i].orderDate = moment(events[i].date, 'DD-MM-YYYY').format('YYYY-MM-DD');           
+            allEvents[i].title = schengenEvents[index].title;
+            allEvents[i].circuit = schengenEvents[index].circuit;
+            allEvents[i].isSchengen = schengenEvents[index].isSchengen;
+            allEvents[i].orderDate = moment(allEvents[i].date, 'DD-MM-YYYY').format('YYYY-MM-DD');           
 
-            events[i].RaceDayOne = moment(events[i].date, 'DD/MM/YYYY').subtract(2, 'days').format('YYYY-MM-DD');
-            events[i].RaceDayTwo = moment(events[i].date, 'DD/MM/YYYY').subtract(1, 'days').format('YYYY-MM-DD');
+            allEvents[i].RaceDayOne = moment(allEvents[i].date, 'DD/MM/YYYY').subtract(2, 'days').format('YYYY-MM-DD');
+            allEvents[i].RaceDayTwo = moment(allEvents[i].date, 'DD/MM/YYYY').subtract(1, 'days').format('YYYY-MM-DD');
 
-            if (events[i].type.toLowerCase() == 'test') {
-                events[i].TestTo = moment(events[i].date, 'DD/MM/YYYY').add(events[i].duration, 'days').format('YYYY-MM-DD');
+            if (allEvents[i].type.toLowerCase() == 'test') {
+                allEvents[i].TestTo = moment(allEvents[i].date, 'DD/MM/YYYY').add(allEvents[i].duration, 'days').format('YYYY-MM-DD');
             }
 
             // Build Array of event dates and push into event object
@@ -377,15 +402,15 @@ const TeamMemberView = ({logout}) => {
             let engineer = [];
             let marketing = [];
 
-            let from = moment(events[i].orderDate, 'YYYY-MM-DD');
-            let to = moment(events[i].orderDate, 'YYYY-MM-DD');
+            let from = moment(allEvents[i].orderDate, 'YYYY-MM-DD');
+            let to = moment(allEvents[i].orderDate, 'YYYY-MM-DD');
 
 
             // Could refactor this into another loop and programmatically look up the role and date offsets
             // but I really hate loops in loops in loops - Big O (asymtotic complexity)
 
             // Race      
-            if (events[i].type.toLowerCase() == 'race') {      
+            if (allEvents[i].type.toLowerCase() == 'race') {      
                 
                 // Garage
                 from.subtract(config.eventDays.race.garage[0], 'days');
@@ -397,8 +422,8 @@ const TeamMemberView = ({logout}) => {
                 }
 
                 // Mechanic
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.mechanic[0], 'days');
                 to.add(config.eventDays.race.mechanic[1], 'days');
 
@@ -408,8 +433,8 @@ const TeamMemberView = ({logout}) => {
                 }
 
                 // Engineer
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.engineer[0], 'days');
                 to.add(config.eventDays.race.engineer[1], 'days');
 
@@ -419,8 +444,8 @@ const TeamMemberView = ({logout}) => {
                 }                
 
                 // Marketing
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.marketing[0], 'days');
                 to.add(config.eventDays.race.marketing[1], 'days');
 
@@ -429,7 +454,7 @@ const TeamMemberView = ({logout}) => {
                     from = from.add(1, 'days');
                 }
             } else {
-                to = moment(events[i].TestTo);
+                to = moment(allEvents[i].TestTo);
 
                 // Garage
                 from.subtract(config.eventDays.test.garage[0], 'days');
@@ -441,8 +466,8 @@ const TeamMemberView = ({logout}) => {
                 }
 
                 // Mechanic
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.mechanic[0], 'days');
                 to.add(config.eventDays.test.mechanic[1], 'days');
 
@@ -452,8 +477,8 @@ const TeamMemberView = ({logout}) => {
                 }
 
                 // Engineer
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.engineer[0], 'days');
                 to.add(config.eventDays.test.engineer[1], 'days');
 
@@ -463,8 +488,8 @@ const TeamMemberView = ({logout}) => {
                 }                
 
                 // Marketing
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.marketing[0], 'days');
                 to.add(config.eventDays.test.marketing[1], 'days');
 
@@ -480,31 +505,88 @@ const TeamMemberView = ({logout}) => {
             enumeratedDates.engineer = engineer;
             enumeratedDates.marketing = marketing;
 
-            events[i].dates = enumeratedDates;
+            allEvents[i].dates = enumeratedDates;
 
-            // console.log(events[i]);
+            // console.log(allEvents[i]);
         }   
 
-        // Update events object but not updating flag otherwise we'll end up in a infinite loop!
-        updateEvents(orderBy(events.filter(x => x.orderDate >= startDate), 'orderDate', 'asc'));  
+        // Update allEvents object but not updating flag otherwise we'll end up in a infinite loop!
+        updateOrderedEvents(orderBy(allEvents, 'orderDate', 'asc'));  
     }
 
-    const filterEvents = () => {
-        updateNext3Events(events.slice(0, 3));
+    const filterEvents = () => { 
+        if (orderedEvents != undefined && orderedEvents.length > 0) {
+            // Update Event Filters
+            updateFilteredEvents(orderedEvents.filter(x => x.orderDate >= startDate && x.orderDate <= endDate));
 
-        // Calculate events in date range
+            // RACES
+            setSchengenRaceEvents(orderedEvents.filter(x => x.type.toLowerCase() == 'race' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen));
+            
+            // TESTS
+            setSchengenTestEvents(orderedEvents.filter(x => x.type.toLowerCase() == 'test' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen));
+        }
 
-        // RACES
-        setSchengenRaceEvents(events.filter(x => x.type.toLowerCase() == 'race' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen));
-        
-        // TESTS
-        setSchengenTestEvents(events.filter(x => x.type.toLowerCase() == 'test' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen));
-
-        // HOLIDAYS
-        setSchengenHolidayEvents(teamMember.travel != undefined ? teamMember.travel.filter(x => x.isschengen && moment(x.startdate, 'DD/MM/YYYY').format('YYYY-MM-DD') >= startDate && moment(x.enddate, 'DD/MM/YYYY').format('YYYY-MM-DD') <= endDate) : 0);
+        if (teamMemberHolidays != undefined && teamMemberHolidays.length > 0) {
+            // HOLIDAYS
+            setSchengenHolidayEvents(teamMemberHolidays.length > 0 ? teamMemberHolidays.filter(x => x.isschengen && moment(x.startdate, 'DD/MM/YYYY').format('YYYY-MM-DD') >= startDate && moment(x.enddate, 'DD/MM/YYYY').format('YYYY-MM-DD') <= endDate) : 0);
+        }
     }
     // #endregion
 
+    // #region Gauge
+    const renderGauge = () => {
+        // Set Up -- REMEMBER WE'RE DEALING WITH RADIANS HERE NOT DEGREES, 360 (or Tau) = 2(PI x R), therefore 180 (or PI) = PI x R
+        let target = '#arc-gauge';
+        let pi = Math.PI;
+        let multiplier = (pi / 180);
+        let width = 370, height = 210;
+        let iR = 90, oR = 100;
+        let color = '#0CA597'; 
+        let max = 90, min = 0, current = 0;
+        let arc = d3.svg.arc().innerRadius(iR).outerRadius(oR).startAngle(-90 * multiplier); // Arc Defaults
+
+        // Make sure there is only one gauge left after all the renders!
+        d3.select(target).html('');
+
+        // Place svg element
+        let svg = d3.select(target).append("svg").attr("width", width).attr("height", 125).append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+        let background = svg.append("path").datum({endAngle:  90 * multiplier}).style("fill", "#ddd").attr("d", arc); // Append background arc to svg
+        let foreground = svg.append("path").datum({endAngle: -90 * multiplier}).style("fill", color).attr("d", arc); // Append foreground arc to svg
+
+        // Display Max value
+        let maxText = svg.append("text").attr("transform", "translate("+ (iR + ((oR - iR) / 2)) +",15)").attr("text-anchor", "middle").style("fill", "#fff").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(max); // Set between inner and outer Radius
+
+        // Display Min value
+        let minText = svg.append("text").attr("transform", "translate("+ -(iR + ((oR - iR) / 2)) +",15)").attr("text-anchor", "middle").style("fill", "#fff").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(min); // Set between inner and outer Radius
+
+        // Display Current value, Push up from center 1/4 of innerRadius
+        let currentText = svg.append("text").attr("text-anchor", "middle").style("font-size", "30").style("fill", "#0CA597").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(current);
+
+        let value;
+        if (totalDays > 0) {
+            value = Math.floor(totalDays - 45) * multiplier; // Get value             
+        } else {
+            value = -(pi / 2); // -1.57rads or approx. -90d
+        }
+
+        currentText.transition().text(totalDays + ' days'); // Text transition
+                                
+        // Arc Transition
+        foreground.transition().duration(750).call(arcTween, value);
+
+        function arcTween(transition, newAngle) {
+            transition.attrTween("d", function(d) {
+                let interpolate = d3.interpolate(d.endAngle, newAngle);
+                    return function(t) {
+                        d.endAngle = interpolate(t);  
+                        return arc(d);  
+                };  
+            }); 
+        } // Update animation
+    } 
+    // #endregion
+    
     //#region Render
     return (
         <article id="team-member" className="container">
@@ -520,7 +602,8 @@ const TeamMemberView = ({logout}) => {
                 <div className="row">
                     <div className="col col-md-1">
                         <div className="icon bg-petronas mt-1">
-                            { (teamMember.role == 'garage') ? 
+                            { isLoadingTeamMember ? spinner: 
+                            (teamMember.role == 'garage') ? 
                             <i className="fas fa-warehouse"></i>
                             : (teamMember.role == 'mechanic') ?
                             <i className="fas fa-tools"></i>
@@ -534,17 +617,18 @@ const TeamMemberView = ({logout}) => {
                     </div>
                     <div className="col col-md-10 ml-3">
                         <p>
-                            <strong>Name: </strong> {teamMember.name + ' ' + teamMember.surname}
+                            <strong>Name: </strong> { isLoadingTeamMember ? null : teamMember.name + ' ' + teamMember.surname}
                             <br />
-                            <strong>Email: </strong> {teamMember.email}
+                            <strong>Email: </strong> { isLoadingTeamMember ? null : teamMember.email}
                             <br />
-                            <strong>Nationality: </strong> {teamMember.nationality}
+                            <strong>Nationality: </strong> { isLoadingTeamMember ? null : teamMember.nationality}
                             <br />
-                            <strong>Role: </strong> <span className="capitalize">{teamMember.role}</span>
+                            <strong>Role: </strong> <span className="capitalize">{ isLoadingTeamMember ? null : teamMember.role}</span>
                         </p> 
                     </div>
                 </div>
             </section>
+
 
             { teamMember.isSchengen ?
             <section id="my-schengen" className="mb-5">
@@ -591,53 +675,49 @@ const TeamMemberView = ({logout}) => {
                         </div>
                     </div>
 
-                    <div className="row total">
-                        <div className="col col-md-3">
-                            <h5 className="grey mt-2 float-right mr-3">Total Days In Schengen Area:</h5>
-                        </div>
-                        <div className="col col-md-9">
-                            <div className="progress">
-                                <div className="progress-bar bg-petronas" role="progressbar" style={{width: totalWidth + '%'}}><strong>{totalDays} days</strong></div>
+                    <div className="row metrics">
+                        <div className="col col-md-4" id="arc-gauge"></div>
+                        <div className="col col-md-8">
+                            <div className="row race">
+                                <div className="col col-md-3">
+                                    <h6 className="grey mt-2 float-right mr-3">Races:</h6>
+                                </div>
+                                <div className="col col-md-8 pr-4 threshold">
+                                    <div className="progress">
+                                        <div className="progress-bar bg-grey" role="progressbar" style={{width: raceWidth + '%'}}>{SchengenRaceDates.length}</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="row race">
-                        <div className="col col-md-3">
-                            <h6 className="grey mt-2 float-right mr-3">Races:</h6>
-                        </div>
-                        <div className="col col-md-6 threshold">
-                            <div className="progress">
-                                <div className="progress-bar bg-grey" role="progressbar" style={{width: raceWidth + '%'}}>{SchengenRaceDates.length}</div>
+                            <div className="row tests">
+                                <div className="col col-md-3">
+                                    <h6 className="grey mt-2 float-right mr-3">Tests:</h6>
+                                </div>
+                                <div className="col col-md-8 pr-4 threshold">
+                                    <div className="progress">
+                                        <div className="progress-bar bg-grey" role="progressbar" style={{width: testWidth + '%'}}>{SchengenTestDates.length}</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="row tests">
-                        <div className="col col-md-3">
-                            <h6 className="grey mt-2 float-right mr-3">Tests:</h6>
-                        </div>
-                        <div className="col col-md-6 threshold">
-                            <div className="progress">
-                                <div className="progress-bar bg-grey" role="progressbar" style={{width: testWidth + '%'}}>{SchengenTestDates.length}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="row holiday">
-                        <div className="col col-md-3">
-                            <h6 className="grey mt-2 float-right mr-3">Holiday:</h6>
-                        </div>
-                        <div className="col col-md-6 threshold">
-                            <div className="progress">
-                                <div className="progress-bar bg-grey" role="progressbar" style={{width: holidayWidth + '%'}}>{SchengenHolidayDates.length}</div>
+                            <div className="row holiday">
+                                <div className="col col-md-3">
+                                    <h6 className="grey mt-2 float-right mr-3">Holiday:</h6>
+                                </div>
+                                <div className="col col-md-8 pr-4 threshold">
+                                    <div className="progress">
+                                        <div className="progress-bar bg-grey" role="progressbar" style={{width: holidayWidth + '%'}}>{SchengenHolidayDates.length}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 }
             </section>
-            : null }
+            : null
+            }
+
 
             <section id="my-schedule" className="mb-5">
                 <div className="row">
@@ -652,18 +732,19 @@ const TeamMemberView = ({logout}) => {
                 </div>
                 
                 { !showMySchedule ?
-                null
-                :
+                null :
                 <>
                 <div className="row">
                     <div className="col p-0">
-                        <h5 className="grey">Next 3 Events</h5>
+                        <h5 className="grey">Upcoming Events</h5>
                     </div>
                 </div>
                 <div className="row mb-3">
                     <div className="col card-deck">                    
-                    { next3Events != undefined && next3Events.length > 0 && next3Events.map(item => (
-                        <EventCard event={item} teamMember={teamMember} />
+                    { filteredEvents != undefined && filteredEvents.length > 0 && filteredEvents.slice(0, config.upcomingEventCount).map(item => (
+                        <div className="card col-md-4" key={item.eventCode}>
+                            <EventCard event={item} />
+                        </div>
                     ))}
                     </div>
                 </div>
@@ -680,8 +761,10 @@ const TeamMemberView = ({logout}) => {
                 </div>
                 { !showFullSchedule ?
                     null :
-                    events != undefined && events.length > 0 && events.slice(4, events.length).map(item => (
-                    <EventRow event={item} />
+                    filteredEvents != undefined && filteredEvents.length > 0 && filteredEvents.slice(config.upcomingEventCount + 1, filteredEvents.length).map(item => (
+                        <div className="row full-schedule-row" key={item.id}>
+                            <EventRow event={item} />
+                        </div>
                 ))}
                 </>
                 }
@@ -700,8 +783,7 @@ const TeamMemberView = ({logout}) => {
                 </div>
 
                 { !showAnnualLeave ?
-                null
-                :
+                null :
                 !showForm ?
                 <div className="row">
                     <div className="col col-md-2 add-annual-leave" onClick={() => { toggleForm(); }}>
@@ -719,21 +801,20 @@ const TeamMemberView = ({logout}) => {
                 }
                 
                 { !showAnnualLeave ?
-                null
-                :
+                null :
                 showForm ? 
                 <div id="annual-leave-form" className="row pb-2">
                     <div className="col col-md-1 grey mt-2">
                         <h6 className="float-right">Date From:</h6>
                     </div>
                     <div className="col col-md-3">                        
-                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(newAnnualLeave.startdate, 'DD/MM/YYYY').toDate()} onChange={(e) => { changeDate('startdate', e) }} />
+                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(newHoliday.startdate, 'DD/MM/YYYY').toDate()} onChange={(e) => { changeDate('startdate', e) }} />
                     </div>
                     <div className="col col-md-1 grey mt-2">
                         <h6 className="float-right">Date To:</h6>
                     </div>
                     <div className="col col-md-3">                        
-                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(newAnnualLeave.enddate, 'DD/MM/YYYY').toDate()} onChange={(e) => { changeDate('enddate', e) }} />
+                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(newHoliday.enddate, 'DD/MM/YYYY').toDate()} onChange={(e) => { changeDate('enddate', e) }} />
                     </div>
                     <div className="col col-md-3">
                         <select name="destination" className="form-control" onChange={(e) => { change(e) }}>
@@ -993,12 +1074,11 @@ const TeamMemberView = ({logout}) => {
                         <button type="submit" className="btn btn-primary bg-petronas float-right" onClick={() => { addAnnualLeave(); }}>Save</button>
                     </div>
                 </div>     
-                : null 
+                : null
                 }      
 
                 { !showAnnualLeave ?
-                null
-                :
+                null :
                 <>
                 <div id="annual-leave-header" className="row bg-grey">
                     <div className="col col-md-3">
@@ -1017,7 +1097,7 @@ const TeamMemberView = ({logout}) => {
                 </div>
 
                 <div className="annual-leave-rows">
-                    { teamMember.travel != undefined && teamMember.travel.length > 0 && teamMember.travel.map(item => (
+                    { teamMemberHolidays != undefined && teamMemberHolidays.length > 0 && teamMemberHolidays.map(item => (
                     <div className="row annual-leave-row" key={item.id}>
                         <div className="col col-md-3">
                             <p>{item.startdate}</p>
@@ -1029,7 +1109,7 @@ const TeamMemberView = ({logout}) => {
                             <p>{item.destination}</p>
                         </div>
                         <div className="col col-md-2">
-                            <p>{item.totaldays} days</p>
+                            <p>{item.dates.length} days</p>
                         </div>
                         <div className="col col-md-1 mt-1">
                             <i className="fas fa-times-circle pointer float-right petronas"  onClick={() => { deleteAnnualLeave(item.id); }}></i>

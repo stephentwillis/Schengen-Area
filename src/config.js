@@ -32,7 +32,8 @@ const config = {
     schengenLimits: {
         period: 180,
         limit: 90
-    }
+    },
+    upcomingEventCount: 3
 };
 
 module.exports = config;

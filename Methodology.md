@@ -27,8 +27,7 @@
 - Assets
     - Mercedes AMG F1 Website CSS, Typography, and Images
 
-### Backend
-- C# / WebAPI (data access layer)
+### Backend- C# / WebAPI (data access layer)
 - NoSQL Database (data storage) - Azure Cosmos DB - Subscription credentials available on request
 
 

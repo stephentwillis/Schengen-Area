@@ -47,11 +47,11 @@ body {
     text-align: left;
     background-color: #000000;
     overflow-y: scroll;
+    font-family: 'MBCorpo Text', Arial, Helvetica, sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6
-{
-    font-family: 'MBCorpo Text'; 
+{     
     margin-top: 0;
     margin-bottom: .5rem  
 }
@@ -208,17 +208,21 @@ a:hover {
     border-radius: 0;    
 }
 
+.metrics {
+    border-top: 2px solid #0CA597;
+    background-color: #1c1d1e;
+}
+
 #annual-leave #annual-leave-header .col,
 #annual-leave-form .col,
-#team-schedule .col,
-#team-schedule #additional-events-header .col
+#additional-events-header .col,
 #event-form .col  {
     padding: 0 5px;
 }
 
 #annual-leave #annual-leave-header .col p,
 .annual-leave-row .col p,
-#team-schedule #additional-events-header .col p,
+#additional-events-header .col p,
 .additional-event-row .col p {
     margin-bottom: 0;
 }
@@ -282,4 +286,62 @@ a:hover {
 .stats .row.tests .col,
 .stats .row.holiday .col {
     padding: 0;
+}
+
+
+select,
+.form-control.datepicker .react-date-picker__wrapper,
+.react-calendar {
+    background-color: #1c1d1e !important;
+    border: 1px solid #4a4a4a !important;
+    color: #fff !important;
+}
+
+.form-control.datepicker .react-date-picker__wrapper input,
+.react-calendar__navigation {
+    color: #fff !important;
+}
+
+.form-control.datepicker .react-date-picker__wrapper button svg {
+    stroke: #0CA597;
+}
+
+.form-control.datepicker .react-date-picker__wrapper button {
+     outline: #0CA597;
+}
+
+.react-calendar__tile,
+.react-calendar__navigation__arrow,
+.react-calendar__navigation__label {
+    background-color: #1c1d1e;
+    color: #fff !important;
+}
+
+.react-calendar--selectRange .react-calendar__tile--hover,
+.react-calendar--selectRange .react-calendar__tile--active,
+.react-calendar__tile--active.react-calendar__tile--range,
+.react-calendar__tile:hover,
+.react-calendar__tile:focus,
+.react-calendar__navigation__arrow:hover,
+.react-calendar__navigation__arrow:focus,
+.react-calendar__navigation__label:hover,
+.react-calendar__navigation__label:focus {
+    background-color: #4a4a4a !important;
+}
+
+button.react-calendar__tile--now {
+    border-top: 2px solid #0CA597 !important; 
+    background-color: #4a4a4a !important;   
+}
+
+select option:checked,
+.react-calendar__tile--rangeStart
+.react-calendar__tile--rangeEnd,
+.react-calendar__tile--hoverStart,
+.react-calendar__tile--hoverEnd,
+.react-calendar__tile--now.react-calendar__tile--rangeStart,
+.react-calendar__tile--hasActive,
+.react-calendar__tile--now:hover,
+.react-calendar__tile--now:focus {
+    background-color: #0CA597 !important;
 }

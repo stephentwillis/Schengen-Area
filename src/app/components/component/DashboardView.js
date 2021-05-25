@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import merge from 'lodash/merge';
 import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
-import DatePicker from 'react-date-picker'
+import DatePicker from 'react-date-picker';
+import Calendar from 'react-calendar';
 import moment from 'moment';
 import axios from 'axios';
 const CosmosClient = require("@azure/cosmos").CosmosClient;
@@ -11,7 +12,7 @@ const CosmosClient = require("@azure/cosmos").CosmosClient;
 import EventRow from './EventRow';
 import EventCard from './EventCard';
 
-import config from '../../../config';
+import config, { upcomingEventCount } from '../../../config';
 import CosmosConfig from "../../../CosmosConfig";
 import schengenEvents from "../../../data/schengenEvents";
 //#endregion
@@ -28,86 +29,67 @@ const DashboardView = ({logout}) => {
     }
 
     const Now = moment();
+
+    const spinner = <><i className="fad fa-spinner-third fa-spin petronas float-left mr-2 mt-1"></i><p>Calculating...</p></>;
     //#endregion
 
     // #region State handling 
+    
+    // Dates
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     
-    const [events, updateEvents] = useState([]);
+    // Evehts
+    const [allEvents, updateAllEvents] = useState([]); // Get this on first load only, mutate but don't filter#
+    const [orderedEvents, updateOrderedEvents] = useState([]);
     const [additionalEvents, updateAdditionalEvents] = useState([]);
-    const [newEvent, updateNewEvent] = useState(initialEvent);
-    const [next3Events, updateNext3Events] = useState([]);
-    const [showFullSchedule, toggleFullScheduleState] = useState(false);
+    const [filteredEvents, updateFilteredEvents] = useState([]); 
 
+    const [newEvent, updateNewEvent] = useState(initialEvent);
+
+    // Team Members
+    const [allTeamMembers, fillAllTeamMembers] = useState([]); 
     const [ukTeamMembers, fillUKTeamMembers] = useState([]); 
     
+
+    // Show/Hide Sections
     const [showForm, toggleFormState] = useState(false);
     const [showUpcomingEvents, toggleUpcomingEventsState] = useState(true);
     const [showAdditionalEvents, toggleAdditionalEventsState] = useState(false);
+    const [showFullSchedule, toggleFullScheduleState] = useState(false);
     const [showUKTeamMembers, toggleUKTeamMembersState] = useState(false);
 
-    const [updateAllEvents, setUpdateEventStatus] = useState(true);
+    // Update in side effects?
+    const [updateEvents, setUpdateEventStatus] = useState(false);
 
     useEffect(() => {        
         fillTeamMembers();
-    }, []);
-    
-    useEffect(() => {
+        fillEvents();
         setDefaultDates();
-        fillEvents();
-
-    }, [ukTeamMembers])
-
-    useEffect(() => {
-        fillEvents();
-    },[ukTeamMembers, startDate, endDate])
+    }, []);
 
     useEffect(() => {        
-        if (updateAllEvents) {
+        if (updateEvents) {
             mutateEvents();
         }
         setUpdateEventStatus(false);
-
-        filterEvents();
-    }, [events]);
+    }, [allEvents]); 
+    
+    useEffect(() => {
+        fillUKTeamMembers(allTeamMembers.filter(x => x.nationality == 'UK'));
+        calculateSchengenHolidays();
+        calculateSchengenStats();
+    }, [allTeamMembers]);
 
     useEffect(() => {
-        
-        for (let i = 0; i < ukTeamMembers.length; i++) {            
-            
-            let raceDates = reduce(events.filter(x => x.type.toLowerCase() == 'race' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen), (acc, event) => {
-                acc.push(event.dates[ukTeamMembers[i].role]);
-                return acc;
-            },[]);
+        filterEvents();
+    }, [orderedEvents]);
 
-            let testDates = reduce(events.filter(x => x.type.toLowerCase() == 'test' && x.orderDate >= startDate && x.orderDate <= endDate && x.isSchengen), (acc, event) => {                
-                acc.push(event.dates[ukTeamMembers[i].role]);
-                return acc;
-            },[]);
-
-            let holidays = ukTeamMembers[i].travel != undefined ? ukTeamMembers[i].travel.filter(x => x.isschengen && moment(x.startdate, 'DD/MM/YYYY').format('YYYY-MM-DD') >= startDate && moment(x.enddate, 'DD/MM/YYYY').format('YYYY-MM-DD') <= endDate) : 0;
-
-            let total = 0;
-            for (let j = 0; j < holidays.length; j++) {
-                total = total + holidays[j].totaldays;
-            }           
-
-            let totalSchengenRaceDates = [].concat.apply([], raceDates).length;
-            let totalSchengenTestDates = [].concat.apply([], testDates).length;
-            let totalSchengenHolidayDates = total;
-
-            ukTeamMembers[i].totalSchengenDays = totalSchengenRaceDates + totalSchengenTestDates + totalSchengenHolidayDates;
-
-            let limitDivisor = (config.schengenLimits.limit / 100); 
-            ukTeamMembers[i].width = (totalSchengenRaceDates + totalSchengenTestDates + totalSchengenHolidayDates)/limitDivisor;
-
-            // if (ukTeamMembers[i].name == 'Glady' && ukTeamMembers[i].surname == 'Powell' ) {
-            //     console.log(ukTeamMembers[i]);
-            // }
-        }
-        
-    },[ukTeamMembers, startDate])
+    useEffect(() => {
+        filterEvents();
+        calculateSchengenHolidays();
+        calculateSchengenStats();
+    },[startDate]);
     //#endregion
 
     //#region Event Handlers
@@ -125,7 +107,7 @@ const DashboardView = ({logout}) => {
         });
     }
 
-    const changeDateRange = (name, date) =>  { 
+    const changeDateRange = (name, date) =>  {
         if (date != null) {
             let tempDate = moment(date)
 
@@ -171,7 +153,7 @@ const DashboardView = ({logout}) => {
 
     const fillEvents = () => { 
         async function getEvents() {
-            const events = await axios({
+            const apiEvents = await axios({
                 method: 'get',
                 url: config.endpoints[0]
             });
@@ -195,10 +177,10 @@ const DashboardView = ({logout}) => {
             updateAdditionalEvents(res.resources);
             // -- Cosmos DB 
             
-            let mergedEvents = merge(events.data, res.resources);
+            let mergedEvents = merge(apiEvents.data, res.resources);
 
             setUpdateEventStatus(true);
-            updateEvents(mergedEvents);
+            updateAllEvents(mergedEvents);
         }
         getEvents();
     }
@@ -206,19 +188,19 @@ const DashboardView = ({logout}) => {
     const mutateEvents = () => {
         // I'm sure there is a more elegant way of doing this!
         // Munging on read will have performance costs.
-        for (let i = 0; i < events.length; i++) {
-            let index = schengenEvents.findIndex(x => x.venue === events[i].venue);
+        for (let i = 0; i < allEvents.length; i++) {
+            let index = schengenEvents.findIndex(x => x.venue === allEvents[i].venue);
 
-            events[i].title = schengenEvents[index].title;
-            events[i].circuit = schengenEvents[index].circuit;
-            events[i].isSchengen = schengenEvents[index].isSchengen;
-            events[i].orderDate = moment(events[i].date, 'DD-MM-YYYY').format('YYYY-MM-DD');           
+            allEvents[i].title = schengenEvents[index].title;
+            allEvents[i].circuit = schengenEvents[index].circuit;
+            allEvents[i].isSchengen = schengenEvents[index].isSchengen;
+            allEvents[i].orderDate = moment(allEvents[i].date, 'DD-MM-YYYY').format('YYYY-MM-DD');           
 
-            events[i].RaceDayOne = moment(events[i].date, 'DD/MM/YYYY').subtract(2, 'days').format('YYYY-MM-DD');
-            events[i].RaceDayTwo = moment(events[i].date, 'DD/MM/YYYY').subtract(1, 'days').format('YYYY-MM-DD');
+            allEvents[i].RaceDayOne = moment(allEvents[i].date, 'DD/MM/YYYY').subtract(2, 'days').format('YYYY-MM-DD');
+            allEvents[i].RaceDayTwo = moment(allEvents[i].date, 'DD/MM/YYYY').subtract(1, 'days').format('YYYY-MM-DD');
 
-            if (events[i].type.toLowerCase() == 'test') {
-                events[i].TestTo = moment(events[i].date, 'DD/MM/YYYY').add(events[i].duration, 'days').format('YYYY-MM-DD');
+            if (allEvents[i].type.toLowerCase() == 'test') {
+                allEvents[i].TestTo = moment(allEvents[i].date, 'DD/MM/YYYY').add(allEvents[i].duration, 'days').format('YYYY-MM-DD');
             }
 
             // Build Array of event dates and push into event object
@@ -228,15 +210,15 @@ const DashboardView = ({logout}) => {
             let engineer = [];
             let marketing = [];
 
-            let from = moment(events[i].orderDate, 'YYYY-MM-DD');
-            let to = moment(events[i].orderDate, 'YYYY-MM-DD');
+            let from = moment(allEvents[i].orderDate, 'YYYY-MM-DD');
+            let to = moment(allEvents[i].orderDate, 'YYYY-MM-DD');
 
 
             // Could refactor this into another loop and programmatically look up the role and date offsets
             // but I really hate loops in loops in loops - Big O (asymtotic complexity)
 
             // Race      
-            if (events[i].type.toLowerCase() == 'race') {      
+            if (allEvents[i].type.toLowerCase() == 'race') {      
                 
                 // Garage
                 from.subtract(config.eventDays.race.garage[0], 'days');
@@ -248,8 +230,8 @@ const DashboardView = ({logout}) => {
                 }
 
                 // Mechanic
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.mechanic[0], 'days');
                 to.add(config.eventDays.race.mechanic[1], 'days');
 
@@ -259,8 +241,8 @@ const DashboardView = ({logout}) => {
                 }
 
                 // Engineer
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.engineer[0], 'days');
                 to.add(config.eventDays.race.engineer[1], 'days');
 
@@ -270,8 +252,8 @@ const DashboardView = ({logout}) => {
                 }                
 
                 // Marketing
-                from = moment(events[i].orderDate);
-                to = moment(events[i].orderDate);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].orderDate);
                 from.subtract(config.eventDays.race.marketing[0], 'days');
                 to.add(config.eventDays.race.marketing[1], 'days');
 
@@ -280,7 +262,7 @@ const DashboardView = ({logout}) => {
                     from = from.add(1, 'days');
                 }
             } else {
-                to = moment(events[i].TestTo);
+                to = moment(allEvents[i].TestTo);
 
                 // Garage
                 from.subtract(config.eventDays.test.garage[0], 'days');
@@ -292,8 +274,8 @@ const DashboardView = ({logout}) => {
                 }
 
                 // Mechanic
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.mechanic[0], 'days');
                 to.add(config.eventDays.test.mechanic[1], 'days');
 
@@ -303,8 +285,8 @@ const DashboardView = ({logout}) => {
                 }
 
                 // Engineer
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.engineer[0], 'days');
                 to.add(config.eventDays.test.engineer[1], 'days');
 
@@ -314,8 +296,8 @@ const DashboardView = ({logout}) => {
                 }                
 
                 // Marketing
-                from = moment(events[i].orderDate);
-                to = moment(events[i].TestTo);
+                from = moment(allEvents[i].orderDate);
+                to = moment(allEvents[i].TestTo);
                 from.subtract(config.eventDays.test.marketing[0], 'days');
                 to.add(config.eventDays.test.marketing[1], 'days');
 
@@ -331,17 +313,20 @@ const DashboardView = ({logout}) => {
             enumeratedDates.engineer = engineer;
             enumeratedDates.marketing = marketing;
 
-            events[i].dates = enumeratedDates;
+            allEvents[i].dates = enumeratedDates;
 
-            // console.log(events[i]);
+            // console.log(allEvents[i]);
         }   
-
-        // Update events object but not updating flag otherwise we'll end up in a infinite loop!
-        updateEvents(orderBy(events.filter(x => x.orderDate >= startDate), 'orderDate', 'asc'));  
+        
+        // Update allEvents object but not updating flag otherwise we'll end up in a infinite loop!
+        updateOrderedEvents(orderBy(allEvents, 'orderDate', 'asc'));  
     }
 
-    const filterEvents = () => {
-        updateNext3Events(events.slice(0, 3));
+    const filterEvents = () => { 
+        if (orderedEvents != undefined && orderedEvents.length > 0) {
+            // Update Event Filters
+            updateFilteredEvents(orderedEvents.filter(x => x.orderDate >= startDate && x.orderDate <= endDate));           
+        }
     }
 
     const fillTeamMembers = () => { 
@@ -368,9 +353,7 @@ const DashboardView = ({logout}) => {
                 .fetchAll();
             // -- Cosmos DB                
     
-            let res = merge(users.data, teamMemberTravels.resources);
-
-            fillUKTeamMembers(res.filter(x => x.nationality == 'UK'));
+            fillAllTeamMembers(merge(users.data, teamMemberTravels.resources));
         }
         getUsers();
     }
@@ -431,6 +414,56 @@ const DashboardView = ({logout}) => {
         }
         del();        
     }
+
+    const calculateSchengenHolidays = () => {
+        for (let i = 0; i < allTeamMembers.length; i++) {           
+                        
+            let holidays = allTeamMembers[i].travel != undefined ? allTeamMembers[i].travel.filter(x => x.isschengen && moment(x.startdate, 'DD/MM/YYYY').format('YYYY-MM-DD') >= startDate && moment(x.enddate, 'DD/MM/YYYY').format('YYYY-MM-DD') <= endDate) : 0;
+
+            let total = 0;
+
+            for (let j = 0; j < holidays.length; j++) {
+                total = total + holidays[j].totaldays;
+            }
+
+            allTeamMembers[i].totalSchengenHolidayDates = total;
+
+            /*if (ukTeamMembers[i].email == 'gpowell@mercedesamgf1.com') {
+                console.log(ukTeamMembers[i]);
+            }*/
+        }
+    }
+
+    const calculateSchengenStats = () => {
+        //console.log('calculating...');
+        //console.log('count: ' + allTeamMembers.length);
+        for (let i = 0; i < allTeamMembers.length; i++) {  
+            
+            let raceDates = reduce(allEvents.filter(x => x.type.toLowerCase() == 'race' && x.isSchengen && x.orderDate >= startDate && x.orderDate <= endDate), (acc, event) => {
+                acc.push(event.dates[allTeamMembers[i].role]);
+                return acc;
+            },[]);
+
+            let testDates = reduce(allEvents.filter(x => x.type.toLowerCase() == 'test' && x.isSchengen && x.orderDate >= startDate && x.orderDate <= endDate) , (acc, event) => {
+                acc.push(event.dates[allTeamMembers[i].role]);
+                return acc;
+            },[]);        
+
+            let totalSchengenRaceDates = [].concat.apply([], raceDates).length;
+            let totalSchengenTestDates = [].concat.apply([], testDates).length;
+
+            allTeamMembers[i].totalSchengenDays = totalSchengenRaceDates + totalSchengenTestDates + allTeamMembers[i].totalSchengenHolidayDates;
+
+            let limitDivisor = (config.schengenLimits.limit / 100); 
+
+            allTeamMembers[i].width = (totalSchengenRaceDates + totalSchengenTestDates + allTeamMembers[i].totalSchengenHolidayDates)/limitDivisor;
+
+            /*if (ukTeamMembers[i].email == 'gpowell@mercedesamgf1.com') {
+                console.log(ukTeamMembers[i]);
+            }*/
+            //console.log(i);
+        }
+    }
     //#endregion
 
     //#region Render
@@ -455,6 +488,21 @@ const DashboardView = ({logout}) => {
                     </div>
                 </div>
 
+                { !startDate ?
+                null :
+                <div className="row dates">
+                    <div className="col col-md-3 grey mt-2">
+                        <h5>{config.schengenLimits.period} Day Period Start Date: </h5>
+                    </div>
+                    <div className="col col-md-4">                        
+                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(startDate).toDate()} onChange={(e) => { changeDateRange('startDate', e) }} />                        
+                    </div>
+                    <div className="col col-md-5 grey mt-2">
+                        <h5 className="float-right">Period End Date: {moment(endDate).format('DD/MM/YYYY').toString()}</h5>
+                    </div>
+                </div>
+                }
+
                 <div className="row">
                     <div className="col col-md-2">
                         { !showUpcomingEvents ?
@@ -462,7 +510,7 @@ const DashboardView = ({logout}) => {
                         :
                         <i className="fas fa-angle-down float-right fs-15 petronas pointer" onClick={() => { toggleUpcomingEvents(); }}></i>
                         }
-                        <h5 className="grey">Next 3 Events</h5> 
+                        <h5 className="grey">Upcoming Events</h5> 
                     </div>                    
                 </div>
                 { !showUpcomingEvents ?
@@ -471,25 +519,29 @@ const DashboardView = ({logout}) => {
                 <>
                 <div className="row mb-5">
                     <div className="col card-deck">                    
-                    { next3Events != undefined && next3Events.length > 0 && next3Events.map(item => (
-                        <EventCard event={item} />
+                    { filteredEvents != undefined && filteredEvents.length > 0 && filteredEvents.slice(0, config.upcomingEventCount).map(item => (
+                        <div className="card col-md-4" key={item.eventCode}>
+                            <EventCard event={item} />
+                        </div>
                     ))}
                     </div>                    
                 </div>
                 <div className="row">
-                    <div className="col col-md-3">
+                    <div className="col col-md-2">
                         { !showFullSchedule ?
-                        <i className="fas fa-angle-right float-right fs-15 petronas pointer mr-5" onClick={() => { toggleFullSchedule(); }}></i>
+                        <i className="fas fa-angle-right float-right fs-15 petronas pointer mr-4" onClick={() => { toggleFullSchedule(); }}></i>
                         :
-                        <i className="fas fa-angle-down float-right fs-15 petronas pointer mr-5" onClick={() => { toggleFullSchedule(); }}></i>
+                        <i className="fas fa-angle-down float-right fs-15 petronas pointer mr-4" onClick={() => { toggleFullSchedule(); }}></i>
                         }
                         <h5 className="grey">Full Schedule</h5>
                     </div>                    
                 </div>
                 { !showFullSchedule ?
                     null :
-                    events != undefined && events.length > 0 && events.slice(4, events.length).map(item => (
-                    <EventRow event={item} />
+                    filteredEvents != undefined && filteredEvents.length > 0 && filteredEvents.slice(config.upcomingEventCount + 1, filteredEvents.length).map(item => (
+                        <div className="row full-schedule-row" key={item.id}>
+                            <EventRow event={item} />
+                        </div>
                 ))}
                 </>
                 }
@@ -649,22 +701,6 @@ const DashboardView = ({logout}) => {
 
                 { !showUKTeamMembers ?
                 null :
-                <div className="row dates">
-                    <div className="col col-md-3 grey mt-2">
-                    <h5>{config.schengenLimits.period} Day Period Start Date: </h5>
-                    </div>
-                    <div className="col col-md-4">                        
-                        <DatePicker className="form-control datepicker" format="dd/MM/yyyy" value={moment(startDate).toDate()} onChange={(e) => { changeDateRange('startDate', e) }} />
-                    </div>
-                    <div className="col col-md-5 grey mt-2">
-                        <h5 className="float-right">Period End Date: {moment(endDate).format('DD/MM/YYYY').toString()}</h5>
-                    </div>
-                </div> 
-                }
-
-                { !showUKTeamMembers ?
-                null
-                :                
                 ukTeamMembers.map(item => (
                     <>
                     <div className="team-member row bg-grey mb-3" key={item.email}>
@@ -687,9 +723,16 @@ const DashboardView = ({logout}) => {
                             <a href={'mailto:' + item.email} target="_blank">{item.email}</a>
                         </div>
                         <div className="col col-md-7 threshold">
-                            <div className="progress">
-                                <div className="progress-bar bg-petronas" role="progressbar" style={{width: item.width + '%'}}><strong>{item.totalSchengenDays} days</strong></div>
+                            { item.totalSchengenDays != undefined ?
+                            <div className="progress">                                
+                                <div className="progress-bar bg-petronas" role="progressbar" style={{width: item.width + '%'}}><strong>{item.totalSchengenDays} {item.width < 5 ? null : 'days'}</strong></div>
                             </div>
+                            : item.totalSchengenHolidayDates != undefined && item.totalSchengenHolidayDates > 0 ?
+                            <div className="progress">                                
+                                <div className="progress-bar bg-petronas w-25" role="progressbar"><strong>{item.totalSchengenHolidayDates} days</strong></div>
+                            </div>
+                            : spinner
+                            }                            
                         </div>
                     </div>
                     </>
