@@ -538,12 +538,17 @@ const TeamMemberView = ({logout}) => {
         // Set Up -- REMEMBER WE'RE DEALING WITH RADIANS HERE NOT DEGREES, 360 (or Tau) = 2(PI x R), therefore 180 (or PI) = PI x R
         let target = '#arc-gauge';
         let pi = Math.PI;
-        let multiplier = (pi / 180);
+        let segment = (Math.PI / 100) / 2; // further divide by two as the arc we're building is plus or minus 1.57 rad
+        let multiplier = config.schengenLimits.limit / 100;
+        let zeroPoint = config.schengenLimits.limit / 2;
+
+        //let multiplier = (pi / 180);
+
         let width = 370, height = 210;
         let iR = 90, oR = 100;
         let color = '#0CA597'; 
         let max = 90, min = 0, current = 0;
-        let arc = d3.svg.arc().innerRadius(iR).outerRadius(oR).startAngle(-90 * multiplier); // Arc Defaults
+        let arc = d3.svg.arc().innerRadius(iR).outerRadius(oR).startAngle(-1.57); // Arc Defaults
 
         // Make sure there is only one gauge left after all the renders!
         d3.select(target).html('');
@@ -551,8 +556,8 @@ const TeamMemberView = ({logout}) => {
         // Place svg element
         let svg = d3.select(target).append("svg").attr("width", width).attr("height", 125).append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-        let background = svg.append("path").datum({endAngle:  90 * multiplier}).style("fill", "#ddd").attr("d", arc); // Append background arc to svg
-        let foreground = svg.append("path").datum({endAngle: -90 * multiplier}).style("fill", color).attr("d", arc); // Append foreground arc to svg
+        let background = svg.append("path").datum({endAngle:  1.57}).style("fill", "#ddd").attr("d", arc); // Append background arc to svg
+        let foreground = svg.append("path").datum({endAngle: -1.57}).style("fill", color).attr("d", arc); // Append foreground arc to svg
 
         // Display Max value
         let maxText = svg.append("text").attr("transform", "translate("+ (iR + ((oR - iR) / 2)) +",15)").attr("text-anchor", "middle").style("fill", "#fff").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(max); // Set between inner and outer Radius
@@ -563,9 +568,24 @@ const TeamMemberView = ({logout}) => {
         // Display Current value, Push up from center 1/4 of innerRadius
         let currentText = svg.append("text").attr("text-anchor", "middle").style("font-size", "30").style("fill", "#0CA597").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(current);
 
-        let value;
+        //let value;
+        let value = 0;
+
         if (totalDays > 0) {
-            value = Math.floor(totalDays - 45) * multiplier; // Get value             
+            //value = Math.floor(totalDays - 45) * multiplier; // Get value
+            
+            if (totalDays > zeroPoint) {
+                // +ve value up to 1.57rad
+                
+
+            } else if (totalDays < zeroPoint) {
+                //-ve values down to -1.57rad
+
+
+            } else {
+                value = 0; // hard set to 0 radians, bang in the middle
+            }
+
         } else {
             value = -(pi / 2); // -1.57rads or approx. -90d
         }
