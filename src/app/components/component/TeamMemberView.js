@@ -538,7 +538,7 @@ const TeamMemberView = ({logout}) => {
         // Set Up -- REMEMBER WE'RE DEALING WITH RADIANS HERE NOT DEGREES, 360 (or Tau) = 2(PI x R), therefore 180 (or PI) = PI x R
         let target = '#arc-gauge';
         let pi = Math.PI;
-        let segment = (Math.PI / 100) / 2; // further divide by two as the arc we're building is plus or minus 1.57 rad
+        let segment = Math.PI / 100; // further divide by two as the arc we're building is plus or minus 1.57 rad
         let multiplier = config.schengenLimits.limit / 100;
         let zeroPoint = config.schengenLimits.limit / 2;
 
