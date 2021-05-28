@@ -27,12 +27,10 @@
 - Assets
     - Mercedes AMG F1 Website CSS, Typography, and Images
 
-### Backend- C# / WebAPI (data access layer)
+### Backend
 - NoSQL Database (data storage) - Azure Cosmos DB - Subscription credentials available on request
 
-
-
-### Team Member Credentials:
+### Team Member Credentials (must exist in users.json):
 - Username: email address
 - Password (capitalisation important): Firstname.Lastname
 

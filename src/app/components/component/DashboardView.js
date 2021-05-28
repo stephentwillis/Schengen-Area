@@ -12,7 +12,7 @@ const CosmosClient = require("@azure/cosmos").CosmosClient;
 import EventRow from './EventRow';
 import EventCard from './EventCard';
 
-import config, { upcomingEventCount } from '../../../config';
+import config from '../../../config';
 import CosmosConfig from "../../../CosmosConfig";
 import schengenEvents from "../../../data/schengenEvents";
 //#endregion
