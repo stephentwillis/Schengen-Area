@@ -535,12 +535,11 @@ const TeamMemberView = ({logout}) => {
 
     // #region Gauge
     const renderGauge = () => {
-        // Set Up -- REMEMBER WE'RE DEALING WITH RADIANS HERE NOT DEGREES, 360 (or Tau) = 2(PI x R), therefore 180 (or PI) = PI x R
+        // Set Up -- REMEMBER WE'RE DEALING WITH RADIANS HERE NOT DEGREES, 360 (or Tau) = 2(Pi x R), therefore 180 (or Pi) = Pi x R
         let target = '#arc-gauge';
-        let segment = Math.PI / 100; // further divide by two as the arc we're building is plus or minus 1.57 rad
-        let zeroPoint = config.schengenLimits.limit / 2;
-        let NinetyDegreesInRads = 1.57;
-        let totaldays = totalDays;
+        let segment = Math.PI / 180; 
+        let NinetyDegreesInRads = segment * 90;
+        let totaldays = totalDays * 2;
 
         let width = 370, height = 210;
         let iR = 90, oR = 100;
@@ -566,26 +565,7 @@ const TeamMemberView = ({logout}) => {
         // Display Current value, Push up from center 1/4 of innerRadius
         let currentText = svg.append("text").attr("text-anchor", "middle").style("font-size", "30").style("fill", "#0CA597").style("font-family", "'MBCorpo Text', Arial, Helvetica, sans-serif").text(current);
 
-        let value;
-        if (totaldays > 0) {
-            //value = Math.floor(totalDays - 45) * multiplier; // Get value
-            
-            if (totaldays > zeroPoint) {
-                // +ve value up to 1.57rad
-                value = totaldays * 0.0157;
-
-            } else if (totaldays < zeroPoint) {
-                //-ve values down to -1.57rad
-                // inverse
-                value = -(NinetyDegreesInRads - (totaldays * segment));
-
-            } else {
-                value = 0; // hard set to 0 radians, bang in the middle
-            }
-
-        } else {
-            value = -NinetyDegreesInRads; // -1.57rads or approx. -90d
-        }
+        let value = (totaldays - 90) * segment;
 
         currentText.transition().text(totalDays + ' days'); // Text transition
                                 
