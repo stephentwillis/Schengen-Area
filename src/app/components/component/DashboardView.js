@@ -352,7 +352,7 @@ const DashboardView = ({logout}) => {
                 .query(querySpec)
                 .fetchAll();
             // -- Cosmos DB                
-    
+            
             fillAllTeamMembers(merge(users.data, teamMemberTravels.resources));
         }
         getUsers();
